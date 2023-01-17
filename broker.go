@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+	"strings"
 
 	"github.com/motemen/go-wsse"
 	"github.com/x-motemen/blogsync/atom"
@@ -69,7 +70,7 @@ func (b *broker) LocalPath(e *entry) string {
 	extension := ".md" // TODO regard re.ContentType
 	paths := []string{b.LocalRoot}
 	if b.OmitDomain == nil || !*b.OmitDomain {
-		paths = append(paths, b.RemoteRoot)
+		paths = append(paths, strings.SplitN(b.RemoteRoot, "/", 2)[0])
 	}
 	paths = append(paths, e.URL.Path+extension)
 	return filepath.Join(paths...)
