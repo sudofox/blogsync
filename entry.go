@@ -25,6 +25,7 @@ type entryHeader struct {
 	Title      string     `yaml:"Title"`
 	Category   []string   `yaml:"Category,omitempty"`
 	Date       *time.Time `yaml:"Date"`
+	Updated    *time.Time `yaml:"Updated,omitempty"`
 	URL        *entryURL  `yaml:"URL"`
 	EditURL    string     `yaml:"EditURL"`
 	IsDraft    bool       `yaml:"Draft,omitempty"`
@@ -120,20 +121,20 @@ func (e *entry) atom() *atom.Entry {
 }
 
 func entryFromAtom(e *atom.Entry) (*entry, error) {
-	alternateLink := e.Links.Find("alternate")
-	if alternateLink == nil {
-		return nil, fmt.Errorf("could not find link[rel=alternate]")
+	entryLink := e.Links.Find("") // no rel
+	if entryLink == nil {
+		return nil, fmt.Errorf("could not find entry link")
 	}
 
-	u, err := url.Parse(alternateLink.Href)
+	u, err := url.Parse(entryLink.Href)
 	if err != nil {
 		return nil, err
 	}
 
-	editLink := e.Links.Find("edit")
-	if editLink == nil {
-		return nil, fmt.Errorf("could not find link[rel=edit]")
-	}
+	// editLink := e.Links.Find("edit")
+	// if editLink == nil {
+	// 	return nil, fmt.Errorf("could not find link[rel=edit]")
+	// }
 
 	categories := make([]string, 0)
 	for _, c := range e.Category {
@@ -143,12 +144,11 @@ func entryFromAtom(e *atom.Entry) (*entry, error) {
 	entry := &entry{
 		entryHeader: &entryHeader{
 			URL:      &entryURL{u},
-			EditURL:  editLink.Href,
 			Title:    e.Title,
 			Category: categories,
 			Date:     e.Updated,
 		},
-		LastModified: e.Edited,
+		LastModified: e.Updated,
 		Content:      e.Content.Content,
 		ContentType:  e.Content.Type,
 	}

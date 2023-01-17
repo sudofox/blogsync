@@ -32,13 +32,20 @@ func newBroker(bc *blogConfig) *broker {
 
 func (b *broker) FetchRemoteEntries() ([]*entry, error) {
 	entries := []*entry{}
-	url := fmt.Sprintf("https://blog.hatena.ne.jp/%s/%s/atom/entry", b.Username, b.RemoteRoot)
+	//url := fmt.Sprintf("https://blog.hatena.ne.jp/%s/%s/atom/entry", b.Username, b.RemoteRoot)
+	url := fmt.Sprintf("https://%s/feed", b.RemoteRoot)
 
 	for {
 		feed, err := b.Client.GetFeed(url)
 		if err != nil {
 			return nil, err
 		}
+
+		// if no entries, then break
+		if len(feed.Entries) == 0 {
+			break
+		}
+
 
 		for _, ae := range feed.Entries {
 			e, err := entryFromAtom(&ae)
@@ -49,12 +56,10 @@ func (b *broker) FetchRemoteEntries() ([]*entry, error) {
 			entries = append(entries, e)
 		}
 
-		nextLink := feed.Links.Find("next")
-		if nextLink == nil {
-			break
-		}
-
-		url = nextLink.Href
+		// get the oldest entry and extract the <published> attribute. Convert that into a unix timestamp to get the "next page" URL.
+		oldestEntry := feed.Entries[len(feed.Entries)-1]
+		// https://<b.remoteRoot>/feed?page=<unix timestamp>
+		url = fmt.Sprintf("https://%s/feed?page=%d", b.RemoteRoot, oldestEntry.Published.Unix())
 	}
 
 	return entries, nil
